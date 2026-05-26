@@ -307,7 +307,7 @@
       <div>
         <label for="picDepth">Depth</label>
         <div class="field">
-          <input id="picDepth" type="number" inputmode="decimal" min="0" step="0.5" value="38">
+          <input id="picDepth" type="number" inputmode="decimal" min="0" step="0.5" value="6.35">
           <span class="unit unit-label">mm</span>
         </div>
       </div>
@@ -316,14 +316,14 @@
       <div>
         <label for="picW">Width</label>
         <div class="field">
-          <input id="picW" type="number" inputmode="decimal" min="0" step="1" value="500">
+          <input id="picW" type="number" inputmode="decimal" min="0" step="1" value="812.8">
           <span class="unit unit-label">mm</span>
         </div>
       </div>
       <div>
         <label for="picH">Height</label>
         <div class="field">
-          <input id="picH" type="number" inputmode="decimal" min="0" step="1" value="700">
+          <input id="picH" type="number" inputmode="decimal" min="0" step="1" value="609.6">
           <span class="unit unit-label">mm</span>
         </div>
       </div>
@@ -482,7 +482,7 @@
   const numericIds = ['picW','picH','picDepth','slatT','slatD','reveal','standout','battenOverlap'];
   const ids = ['picType', ...numericIds];
   const defaultsMm = {
-    picType: 'canvas', picW: 500, picH: 700, picDepth: 38,
+    picType: 'canvas', picW: 812.8, picH: 609.6, picDepth: 6.35,
     slatT: 15, slatD: 45, reveal: 12, standout: 0, battenOverlap: 10,
   };
   const STORAGE_KEY = 'floating-frame-v2';
