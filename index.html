@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1916">
+<title>Floating Frame Calculator</title>
+<style>
+  :root {
+    --bg: #f4f0e8;
+    --panel: #ffffff;
+    --ink: #1c1916;
+    --muted: #6b655c;
+    --line: #d9d2c4;
+    --accent: #b85420;
+    --warn: #8a3a1a;
+    --ok: #2e6b3e;
+    --shadow: 0 1px 0 rgba(28,25,22,.04), 0 2px 8px rgba(28,25,22,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14110d;
+      --panel: #211c16;
+      --ink: #f0ebe0;
+      --muted: #9a9285;
+      --line: #3a3128;
+      --accent: #e8804a;
+      --warn: #e8804a;
+      --ok: #7fc18a;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 14px 80px; }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 4px 0 2px;
+    letter-spacing: -0.01em;
+  }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .panel h2 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row.solo { grid-template-columns: 1fr; }
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .field { position: relative; }
+  input[type="number"], select {
+    width: 100%;
+    font: inherit;
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+    padding: 14px 38px 14px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type="number"]:focus, select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
+  .unit {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 13px;
+    pointer-events: none;
+  }
+  select {
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 5px;
+    line-height: 1.35;
+  }
+  .results { display: grid; gap: 10px; }
+  .cut {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+  }
+  .cut .qty {
+    align-self: center;
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    padding-right: 10px;
+    border-right: 1px solid var(--line);
+    min-width: 48px;
+    text-align: center;
+  }
+  .cut .body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .cut .title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .cut .lp {
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .cut .lp .frac { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 6px; }
+  .cut .sp {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .cut .sp .frac { font-size: 12px; }
+  .cut .sp .lab { text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; font-weight: 600; margin-right: 6px; }
+
+  .buy {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    background: rgba(184, 84, 32, 0.06);
+  }
+  .buy-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .buy-size {
+    font-size: 26px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .buy-size .buy-x { color: var(--muted); font-weight: 500; margin: 0 4px; }
+  .buy-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .buy-rationale { margin-top: 10px; font-size: 13px; color: var(--ink); display: grid; gap: 4px; }
+  .buy-rationale .bnum { font-variant-numeric: tabular-nums; display: inline-block; min-width: 56px; color: var(--accent); }
+
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-top: 6px; }
+  .summary div { font-size: 13px; }
+  .summary .k { color: var(--muted); }
+  .summary .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  .warning, .ok-msg {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    display: none;
+  }
+  .warning { background: rgba(184, 84, 32, 0.1); color: var(--warn); border: 1px solid rgba(184, 84, 32, 0.25); }
+  .ok-msg { background: rgba(46, 107, 62, 0.08); color: var(--ok); border: 1px solid rgba(46, 107, 62, 0.2); }
+  .warning.show, .ok-msg.show { display: block; }
+
+  svg.diagram { width: 100%; height: auto; display: block; }
+  svg .frame-fill { fill: #d4a574; }
+  svg .frame-stroke { stroke: var(--ink); stroke-width: 1.2; fill: none; }
+  svg .pic { fill: #c8d4d8; stroke: var(--ink); stroke-width: 0.8; }
+  svg .wall { fill: var(--bg); }
+  svg .dim-line { stroke: var(--ink); stroke-width: 0.6; fill: none; }
+  svg .dim-text { font: 600 11px -apple-system, system-ui, sans-serif; fill: var(--ink); }
+  svg .dim-text.small { font-size: 9px; font-weight: 500; fill: var(--muted); }
+  svg .miter { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 2; fill: none; }
+  @media (prefers-color-scheme: dark) {
+    svg .frame-fill { fill: #6b4a2a; }
+    svg .pic { fill: #45525a; }
+  }
+
+  .legend {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: middle; margin-right: 5px; border: 1px solid var(--line); }
+  .legend .sw.frame { background: #d4a574; }
+  .legend .sw.pic { background: #c8d4d8; }
+  .legend .sw.miter { background: transparent; border-color: var(--accent); border-style: dashed; }
+  @media (prefers-color-scheme: dark) {
+    .legend .sw.frame { background: #6b4a2a; }
+    .legend .sw.pic { background: #45525a; }
+  }
+
+  .reset {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font: inherit;
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .reset:active { background: var(--bg); }
+
+  .foot { display: flex; justify-content: flex-end; padding: 4px 4px 20px; }
+
+  .unit-toggle {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--panel);
+    margin-bottom: 14px;
+  }
+  .unit-toggle button {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font: 600 13px -apple-system, system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    padding: 8px 18px;
+    cursor: pointer;
+    min-width: 60px;
+  }
+  .unit-toggle button.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .frac { color: var(--muted); font-size: 13px; font-weight: 500; margin-left: 8px; }
+  .cut .dims .frac { font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>Floating Frame Calculator</h1>
+      <div class="sub">Mitered slats on short edge</div>
+    </div>
+    <div class="unit-toggle" role="tablist" aria-label="Units">
+      <button type="button" data-unit="mm" class="active">mm</button>
+      <button type="button" data-unit="in">inches</button>
+    </div>
+  </div>
+
+  <section class="panel">
+    <h2>Picture</h2>
+    <div class="row">
+      <div>
+        <label for="picType">Type</label>
+        <div class="field">
+          <select id="picType">
+            <option value="canvas">Canvas</option>
+            <option value="print">Print / board</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label for="picDepth">Depth</label>
+        <div class="field">
+          <input id="picDepth" type="number" inputmode="decimal" min="0" step="0.5" value="38">
+          <span class="unit unit-label">mm</span>
+        </div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label for="picW">Width</label>
+        <div class="field">
+          <input id="picW" type="number" inputmode="decimal" min="0" step="1" value="500">
+          <span class="unit unit-label">mm</span>
+        </div>
+      </div>
+      <div>
+        <label for="picH">Height</label>
+        <div class="field">
+          <input id="picH" type="number" inputmode="decimal" min="0" step="1" value="700">
+          <span class="unit unit-label">mm</span>
+        </div>
+      </div>
+    </div>
+    <div class="hint" id="picTypeHint">Typical canvas depth: 20–45mm. Measure the actual stretcher bar.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Frame slat <span style="text-transform:none;color:var(--muted);font-weight:400">(on short edge)</span></h2>
+    <div class="row">
+      <div>
+        <label for="slatT">Face thickness <span style="font-size:11px">(visible from front)</span></label>
+        <div class="field">
+          <input id="slatT" type="number" inputmode="decimal" min="0" step="0.5" value="15">
+          <span class="unit unit-label">mm</span>
+        </div>
+      </div>
+      <div>
+        <label for="slatD">Depth <span style="font-size:11px">(front to back)</span></label>
+        <div class="field">
+          <input id="slatD" type="number" inputmode="decimal" min="0" step="0.5" value="45">
+          <span class="unit unit-label">mm</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Floating gap</h2>
+    <div class="row">
+      <div>
+        <label for="reveal">Reveal <span style="font-size:11px">(picture ↔ inner frame)</span></label>
+        <div class="field">
+          <input id="reveal" type="number" inputmode="decimal" min="0" step="0.5" value="12">
+          <span class="unit unit-label">mm</span>
+        </div>
+      </div>
+      <div>
+        <label for="standout">Stand-out <span style="font-size:11px">(picture proud of frame face)</span></label>
+        <div class="field">
+          <input id="standout" type="number" inputmode="decimal" step="0.5" value="0">
+          <span class="unit unit-label">mm</span>
+        </div>
+      </div>
+    </div>
+    <div class="hint">Reveal = gap on every side between picture edge and the inside of the frame. Stand-out = how far the picture sticks out from the front of the frame.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Batten <span style="text-transform:none;color:var(--muted);font-weight:400">— full perimeter, flush with back, butt joints</span></h2>
+    <div class="row solo">
+      <div>
+        <label for="battenOverlap">Overlap behind picture <span style="font-size:11px">(for glue / screws)</span></label>
+        <div class="field">
+          <input id="battenOverlap" type="number" inputmode="decimal" min="0" step="0.5" value="10">
+          <span class="unit unit-label">mm</span>
+        </div>
+        <div class="hint" style="margin-top:6px">How much batten sits behind the picture edge. 6–10mm is plenty for thin prints; 15–20mm for heavier canvas.</div>
+      </div>
+    </div>
+
+    <div class="buy" id="battenBuy">
+      <div class="buy-label">Buy batten stock</div>
+      <div class="buy-size"><span id="battenWidthOut">—</span> <span class="buy-x">×</span> <span id="battenDepthOut">—</span></div>
+      <div class="buy-detail">cross-section (width × depth)</div>
+      <div class="buy-rationale">
+        <div><strong id="battenW2" class="bnum">—</strong> width = reveal + overlap</div>
+        <div><strong id="battenD2" class="bnum">—</strong> depth = picture flush, batten flush with back</div>
+      </div>
+    </div>
+
+    <div class="results" style="margin-top:14px">
+      <div class="cut">
+        <div class="qty">×2</div>
+        <div class="body">
+          <div class="title">Long battens (top &amp; bottom)</div>
+          <div class="lp" id="battenLong">—</div>
+          <div class="sp"><span class="lab">runs full inner width</span></div>
+        </div>
+      </div>
+      <div class="cut">
+        <div class="qty">×2</div>
+        <div class="body">
+          <div class="title">Short battens (sides)</div>
+          <div class="lp" id="battenShort">—</div>
+          <div class="sp"><span class="lab">fits between top &amp; bottom</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="summary" style="margin-top:10px">
+      <div class="k">Total batten linear (+10%)</div>
+      <div class="v" id="battenTotal">—</div>
+      <div class="k">Rough weight (softwood)</div>
+      <div class="v" id="battenWeight">—</div>
+    </div>
+    <div class="hint" style="margin-top:8px">All four pieces are the full depth above. Picture sits on the front face of the batten; back of batten is flush with back of frame.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Frame cuts <span style="text-transform:none;color:var(--muted);font-weight:400">— 45° miters, long-point to long-point</span></h2>
+    <div class="results">
+      <div class="cut">
+        <div class="qty">×2</div>
+        <div class="body">
+          <div class="title">Top / Bottom</div>
+          <div class="lp" id="cutLongLP">—</div>
+          <div class="sp"><span class="lab">short-pt</span><span id="cutLongSP">—</span></div>
+        </div>
+      </div>
+      <div class="cut">
+        <div class="qty">×2</div>
+        <div class="body">
+          <div class="title">Left / Right</div>
+          <div class="lp" id="cutShortLP">—</div>
+          <div class="sp"><span class="lab">short-pt</span><span id="cutShortSP">—</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:10px">Big number = long point (outside edge of the miter). Small number = short point (inside edge).</div>
+
+    <div class="summary">
+      <div class="k">Inner opening</div>
+      <div class="v" id="innerDim">—</div>
+      <div class="k">Outer frame</div>
+      <div class="v" id="outerDim">—</div>
+      <div class="k">Total linear (+10% waste)</div>
+      <div class="v" id="totalLinear">—</div>
+      <div class="k">Space behind picture</div>
+      <div class="v" id="rebate">—</div>
+    </div>
+
+    <div class="warning" id="warning"></div>
+    <div class="ok-msg" id="okmsg"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Diagram</h2>
+    <svg class="diagram" id="diagFront" viewBox="0 0 400 340" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legend">
+      <span><span class="sw frame"></span>Frame slat</span>
+      <span><span class="sw pic"></span>Picture</span>
+      <span><span class="sw miter"></span>Miter cut</span>
+    </div>
+    <svg class="diagram" id="diagSide" viewBox="0 0 400 160" preserveAspectRatio="xMidYMid meet" style="margin-top:14px"></svg>
+    <div class="hint" style="margin-top:6px">Side cross-section: shows how far the picture stands proud and the space behind it for mounting.</div>
+  </section>
+
+  <div class="foot">
+    <button class="reset" id="resetBtn">Reset to defaults</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const numericIds = ['picW','picH','picDepth','slatT','slatD','reveal','standout','battenOverlap'];
+  const ids = ['picType', ...numericIds];
+  const defaultsMm = {
+    picType: 'canvas', picW: 500, picH: 700, picDepth: 38,
+    slatT: 15, slatD: 45, reveal: 12, standout: 0, battenOverlap: 10,
+  };
+  const STORAGE_KEY = 'floating-frame-v2';
+  const MM_PER_IN = 25.4;
+
+  let unit = 'mm'; // 'mm' | 'in'
+
+  function unitFactor() { return unit === 'in' ? MM_PER_IN : 1; }
+  function stepFor() { return unit === 'in' ? '0.0625' : '0.5'; }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.unit === 'in' || data.unit === 'mm') unit = data.unit;
+      if (data.picType) $('picType').value = data.picType;
+      // values are stored as mm internally
+      for (const k of numericIds) {
+        if (data[k] !== undefined) {
+          const mm = Number(data[k]);
+          $(k).value = mmToDisplay(mm);
+        }
+      }
+    } catch (_) { /* ignore */ }
+  }
+  function save() {
+    const data = { unit, picType: $('picType').value };
+    for (const k of numericIds) data[k] = readMm(k);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
+  function readMm(id) {
+    const v = parseFloat($(id).value);
+    if (!Number.isFinite(v)) return 0;
+    return v * unitFactor();
+  }
+  function mmToDisplay(mm) {
+    if (!Number.isFinite(mm)) return '';
+    const v = mm / unitFactor();
+    if (unit === 'in') return (Math.round(v * 10000) / 10000).toString();
+    return (Math.round(v * 10) / 10).toString();
+  }
+
+  function gcd(a, b) { while (b) { [a, b] = [b, a % b]; } return a; }
+
+  function toFraction(decimalInches, denom = 16) {
+    if (!Number.isFinite(decimalInches)) return '—';
+    const sign = decimalInches < 0 ? '-' : '';
+    let v = Math.abs(decimalInches);
+    const whole = Math.floor(v);
+    let num = Math.round((v - whole) * denom);
+    let d = denom;
+    if (num === d) return sign + (whole + 1) + '″';
+    if (num === 0) return sign + whole + '″';
+    const g = gcd(num, d);
+    num /= g; d /= g;
+    return sign + (whole ? whole + ' ' : '') + num + '/' + d + '″';
+  }
+
+  function fmt(mm) {
+    if (!Number.isFinite(mm)) return '—';
+    if (unit === 'in') {
+      const inches = mm / MM_PER_IN;
+      const decStr = (Math.round(inches * 100) / 100).toFixed(2).replace(/\.?0+$/, '');
+      return toFraction(inches) + ' <span class="frac">' + decStr + '″</span>';
+    }
+    const rounded = Math.round(mm * 10) / 10;
+    return rounded.toFixed(1).replace(/\.0$/, '') + ' mm';
+  }
+  function fmtTotal(mm) {
+    if (unit === 'in') {
+      const ft = mm / MM_PER_IN / 12;
+      return ft.toFixed(2) + ' ft <span class="frac">(' + (mm / MM_PER_IN).toFixed(1) + '″)</span>';
+    }
+    return (mm / 1000).toFixed(2) + ' m';
+  }
+
+  function applyUnit(newUnit) {
+    if (newUnit === unit) return;
+    // capture current mm values
+    const mmVals = {};
+    for (const k of numericIds) mmVals[k] = readMm(k);
+    unit = newUnit;
+    // re-display
+    for (const k of numericIds) {
+      $(k).value = mmToDisplay(mmVals[k]);
+      $(k).step = stepFor();
+    }
+    document.querySelectorAll('.unit-label').forEach(el => { el.textContent = unit; });
+    document.querySelectorAll('.unit-toggle button').forEach(b => {
+      b.classList.toggle('active', b.dataset.unit === unit);
+    });
+    recalc();
+  }
+
+  function fmtPlain(mm) {
+    if (!Number.isFinite(mm)) return '—';
+    if (unit === 'in') {
+      const inches = mm / MM_PER_IN;
+      return toFraction(inches);
+    }
+    const rounded = Math.round(mm * 10) / 10;
+    return rounded.toFixed(1).replace(/\.0$/, '') + ' mm';
+  }
+
+  function recalc() {
+    const picW = readMm('picW');
+    const picH = readMm('picH');
+    const picD = readMm('picDepth');
+    const T = readMm('slatT');
+    const D = readMm('slatD');
+    const reveal = readMm('reveal');
+    const standout = readMm('standout');
+
+    const innerW = picW + 2 * reveal;
+    const innerH = picH + 2 * reveal;
+    const outerW = innerW + 2 * T;
+    const outerH = innerH + 2 * T;
+
+    $('cutLongLP').innerHTML  = fmt(outerW);
+    $('cutLongSP').innerHTML  = fmt(innerW);
+    $('cutShortLP').innerHTML = fmt(outerH);
+    $('cutShortSP').innerHTML = fmt(innerH);
+
+    $('innerDim').textContent = `${fmtPlain(innerW)} × ${fmtPlain(innerH)}`;
+    $('outerDim').textContent = `${fmtPlain(outerW)} × ${fmtPlain(outerH)}`;
+
+    const totalLinear = (2 * outerW + 2 * outerH) * 1.1;
+    $('totalLinear').innerHTML = fmtTotal(totalLinear);
+
+    const behind = D - (picD - standout);
+    $('rebate').textContent = fmtPlain(behind);
+
+    // ---- Batten (perimeter, flush with back, butt-jointed) ----
+    const overlap = readMm('battenOverlap');
+    const battenW = reveal + overlap;          // sits flush to slat, extends `overlap` past the picture edge
+    const battenDepth = Math.max(0, behind);   // picture flush against batten front, batten flush with frame back
+    const longBatten = innerW;
+    const shortBatten = Math.max(0, innerH - 2 * battenW);
+    const battenLinear = (2 * longBatten + 2 * shortBatten) * 1.1;
+    const battenVolumeM3 = (2 * longBatten + 2 * shortBatten) / 1000 * (battenW / 1000) * (battenDepth / 1000);
+    const battenWeightKg = battenVolumeM3 * 500;
+
+    $('battenWidthOut').innerHTML = fmtPlain(battenW);
+    $('battenDepthOut').innerHTML = fmtPlain(battenDepth);
+    $('battenW2').innerHTML = fmtPlain(battenW);
+    $('battenD2').innerHTML = fmtPlain(battenDepth);
+    $('battenLong').innerHTML = fmt(longBatten);
+    $('battenShort').innerHTML = fmt(shortBatten);
+    $('battenTotal').innerHTML = fmtTotal(battenLinear);
+    $('battenWeight').textContent = battenWeightKg > 0 ? battenWeightKg.toFixed(2) + ' kg' : '—';
+
+    const warn = $('warning');
+    const ok = $('okmsg');
+    warn.classList.remove('show');
+    ok.classList.remove('show');
+    const msgs = [];
+    if (behind < 0) {
+      msgs.push(`Frame is too shallow by ${fmt(-behind)}. Either deepen the slat, reduce stand-out, or pick a thinner picture.`);
+    } else if (behind < 6) {
+      msgs.push(`Only ${fmt(behind)} of space behind the picture — tight for a mounting batten. Consider a deeper slat.`);
+    }
+    // (use innerHTML below to render <span class="frac"> spans)
+    if (picW <= 0 || picH <= 0) msgs.push('Enter picture width and height.');
+    if (T <= 0) msgs.push('Enter a slat face thickness greater than 0.');
+
+    if (msgs.length) {
+      warn.innerHTML = msgs.join('<br>');
+      warn.classList.add('show');
+    } else if (picW && picH && T && D) {
+      ok.innerHTML = `Looks good — ${fmt(behind)} of clear space behind the picture for a mounting batten.`;
+      ok.classList.add('show');
+    }
+
+    // Picture type hint
+    const t = $('picType').value;
+    $('picTypeHint').textContent = t === 'canvas'
+      ? 'Typical canvas depth: 20–45mm. Measure the actual stretcher bar.'
+      : 'Typical print / mounting board depth: 3–10mm.';
+
+    drawFront(outerW, outerH, innerW, innerH, T, picW, picH);
+    drawSide(D, T, picD, standout, reveal);
+
+    save();
+  }
+
+  // ---- Diagrams ----
+
+  function drawFront(outerW, outerH, innerW, innerH, T, picW, picH) {
+    const svg = $('diagFront');
+    const vbW = 400, vbH = 340;
+    const padX = 64, padY = 40;
+    const aw = vbW - padX * 2;
+    const ah = vbH - padY * 2;
+    const scale = Math.min(aw / outerW, ah / outerH);
+    const w = outerW * scale, h = outerH * scale;
+    const tt = T * scale;
+    const x = (vbW - w) / 2;
+    const y = (vbH - h) / 2;
+
+    const picWpx = picW * scale, picHpx = picH * scale;
+    const px = (vbW - picWpx) / 2;
+    const py = (vbH - picHpx) / 2;
+
+    // Inner opening box
+    const ix = x + tt, iy = y + tt;
+    const iw = w - 2 * tt, ih = h - 2 * tt;
+
+    let s = '';
+    // Frame body (outer rect minus inner)
+    s += `<path class="frame-fill" fill-rule="evenodd" d="M${x} ${y} h${w} v${h} h${-w} z M${ix} ${iy} h${iw} v${ih} h${-iw} z"/>`;
+    // Frame outline
+    s += `<rect class="frame-stroke" x="${x}" y="${y}" width="${w}" height="${h}"/>`;
+    s += `<rect class="frame-stroke" x="${ix}" y="${iy}" width="${iw}" height="${ih}"/>`;
+
+    // Miter diagonals
+    s += `<line class="miter" x1="${x}" y1="${y}" x2="${ix}" y2="${iy}"/>`;
+    s += `<line class="miter" x1="${x + w}" y1="${y}" x2="${ix + iw}" y2="${iy}"/>`;
+    s += `<line class="miter" x1="${x}" y1="${y + h}" x2="${ix}" y2="${iy + ih}"/>`;
+    s += `<line class="miter" x1="${x + w}" y1="${y + h}" x2="${ix + iw}" y2="${iy + ih}"/>`;
+
+    // Picture (drawn floating inside)
+    s += `<rect class="pic" x="${px}" y="${py}" width="${picWpx}" height="${picHpx}"/>`;
+
+    // Outer width dimension (top)
+    const dyTop = y - 20;
+    s += `<line class="dim-line" x1="${x}" y1="${dyTop}" x2="${x + w}" y2="${dyTop}"/>`;
+    s += `<line class="dim-line" x1="${x}" y1="${dyTop - 4}" x2="${x}" y2="${dyTop + 4}"/>`;
+    s += `<line class="dim-line" x1="${x + w}" y1="${dyTop - 4}" x2="${x + w}" y2="${dyTop + 4}"/>`;
+    s += `<text class="dim-text" x="${x + w / 2}" y="${dyTop - 6}" text-anchor="middle">${fmtPlain(outerW)}</text>`;
+
+    // Outer height dimension (right) — text rotated 90° (reads top-to-bottom)
+    const dxRight = x + w + 20;
+    s += `<line class="dim-line" x1="${dxRight}" y1="${y}" x2="${dxRight}" y2="${y + h}"/>`;
+    s += `<line class="dim-line" x1="${dxRight - 4}" y1="${y}" x2="${dxRight + 4}" y2="${y}"/>`;
+    s += `<line class="dim-line" x1="${dxRight - 4}" y1="${y + h}" x2="${dxRight + 4}" y2="${y + h}"/>`;
+    const rx = dxRight + 14, ry = y + h / 2;
+    s += `<text class="dim-text" x="${rx}" y="${ry}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${rx} ${ry})">${fmtPlain(outerH)}</text>`;
+
+    // Slat thickness annotation — written ON the top slat (above the picture, inside the brown band)
+    if (tt >= 10) {
+      s += `<text class="dim-text small" x="${x + w / 2}" y="${y + tt / 2 + 3}" text-anchor="middle" style="fill:#fff">T ${fmtPlain(T)}</text>`;
+    } else {
+      // Slat too thin to label inside — use external annotation top-left
+      s += `<line class="dim-line" x1="${x - 8}" y1="${y}" x2="${x - 8}" y2="${y + tt}"/>`;
+      s += `<line class="dim-line" x1="${x - 12}" y1="${y}" x2="${x - 4}" y2="${y}"/>`;
+      s += `<line class="dim-line" x1="${x - 12}" y1="${y + tt}" x2="${x - 4}" y2="${y + tt}"/>`;
+      s += `<text class="dim-text small" x="${x - 14}" y="${y + tt / 2 + 3}" text-anchor="end">T ${fmtPlain(T)}</text>`;
+    }
+
+    svg.innerHTML = s;
+  }
+
+  function drawSide(D, T, picD, standout, reveal) {
+    const svg = $('diagSide');
+    const vbW = 400, vbH = 160;
+    const padL = 80, padR = 60, padY = 30;
+    const aw = vbW - padL - padR;
+    const ah = vbH - padY * 2;
+
+    // Horizontal axis = depth (z), 0 at frame face, +z going back (right in side view rotated)
+    // Vertical axis = picture height (we'll just show a generic vertical slice)
+    // Compute total horizontal span: from front-most (picture face at -standout) to back of frame at +D
+    const zFront = -Math.max(standout, 0);  // front-most extent
+    const zBack = D;
+    const span = zBack - zFront;
+    if (span <= 0) { svg.innerHTML = ''; return; }
+    const scale = aw / span;
+
+    // Vertical scale — just use a moderate picture height
+    const picHmm = 200; // representative
+    const frameOver = 80; // frame extends past picture top/bottom by ~T + reveal (representative)
+    const totalVmm = picHmm + 2 * (T + reveal);
+    const vScale = ah / totalVmm;
+
+    // Coords
+    const xZero = padL + (-zFront) * scale; // x where z=0 (frame face)
+    const yMid = padY + ah / 2;
+    const picTop = yMid - (picHmm / 2) * vScale;
+    const picBot = yMid + (picHmm / 2) * vScale;
+    const frameTop = picTop - (T + reveal) * vScale;
+    const frameBot = picBot + (T + reveal) * vScale;
+
+    // Frame side cross-section: two slats (top and bottom), each from z=0 to z=D, T thick
+    const slatTpx = T * vScale;
+    const frameX0 = xZero;
+    const frameX1 = xZero + D * scale;
+
+    // Picture rectangle (from z = -standout (front) to z = picD - standout (back))
+    const picX0 = xZero + (-standout) * scale;
+    const picX1 = picX0 + picD * scale;
+
+    let s = '';
+
+    // Background wall hatch behind frame back
+    const wallX = xZero + D * scale;
+    s += `<rect class="wall" x="${wallX}" y="${padY - 6}" width="${vbW - padR - wallX}" height="${ah + 12}"/>`;
+    // wall line
+    s += `<line class="dim-line" x1="${wallX}" y1="${padY - 6}" x2="${wallX}" y2="${padY + ah + 6}" stroke-dasharray="2 3"/>`;
+    s += `<text class="dim-text small" x="${wallX + 4}" y="${padY + ah + 10}" text-anchor="start">wall</text>`;
+
+    // Top slat
+    s += `<rect class="frame-fill" x="${frameX0}" y="${frameTop}" width="${D * scale}" height="${slatTpx}"/>`;
+    s += `<rect class="frame-stroke" x="${frameX0}" y="${frameTop}" width="${D * scale}" height="${slatTpx}"/>`;
+    // Bottom slat
+    s += `<rect class="frame-fill" x="${frameX0}" y="${frameBot - slatTpx}" width="${D * scale}" height="${slatTpx}"/>`;
+    s += `<rect class="frame-stroke" x="${frameX0}" y="${frameBot - slatTpx}" width="${D * scale}" height="${slatTpx}"/>`;
+
+    // Picture
+    s += `<rect class="pic" x="${picX0}" y="${picTop}" width="${picX1 - picX0}" height="${picBot - picTop}"/>`;
+
+    // Mounting batten hint (small rect behind picture, centered between picture back and frame back)
+    const battenW = Math.max(8, (D - (picD - standout)) * scale * 0.5);
+    if (battenW > 2 && (D - (picD - standout)) > 0) {
+      const bx = picX1 + 2;
+      const by = yMid - 18 * vScale;
+      const bh = 36 * vScale;
+      s += `<rect x="${bx}" y="${by}" width="${battenW}" height="${bh}" fill="none" stroke="var(--muted)" stroke-width="0.6" stroke-dasharray="2 2"/>`;
+      s += `<text class="dim-text small" x="${bx + battenW / 2}" y="${by - 3}" text-anchor="middle">batten</text>`;
+    }
+
+    // Dimension: stand-out (if > 0)
+    if (standout > 0) {
+      const so_y = frameTop - 12;
+      s += `<line class="dim-line" x1="${picX0}" y1="${so_y}" x2="${xZero}" y2="${so_y}"/>`;
+      s += `<line class="dim-line" x1="${picX0}" y1="${so_y - 4}" x2="${picX0}" y2="${so_y + 4}"/>`;
+      s += `<line class="dim-line" x1="${xZero}" y1="${so_y - 4}" x2="${xZero}" y2="${so_y + 4}"/>`;
+      s += `<text class="dim-text small" x="${(picX0 + xZero) / 2}" y="${so_y - 4}" text-anchor="middle">stand-out ${fmtPlain(standout)}</text>`;
+    }
+
+    // Frame depth dimension
+    const fd_y = frameBot + 16;
+    s += `<line class="dim-line" x1="${frameX0}" y1="${fd_y}" x2="${frameX1}" y2="${fd_y}"/>`;
+    s += `<line class="dim-line" x1="${frameX0}" y1="${fd_y - 4}" x2="${frameX0}" y2="${fd_y + 4}"/>`;
+    s += `<line class="dim-line" x1="${frameX1}" y1="${fd_y - 4}" x2="${frameX1}" y2="${fd_y + 4}"/>`;
+    s += `<text class="dim-text" x="${(frameX0 + frameX1) / 2}" y="${fd_y + 14}" text-anchor="middle">frame depth ${fmtPlain(D)}</text>`;
+
+    // Picture depth dimension (above picture)
+    const pd_y = picTop - 6;
+    s += `<line class="dim-line" x1="${picX0}" y1="${pd_y}" x2="${picX1}" y2="${pd_y}"/>`;
+    s += `<line class="dim-line" x1="${picX0}" y1="${pd_y - 4}" x2="${picX0}" y2="${pd_y + 4}"/>`;
+    s += `<line class="dim-line" x1="${picX1}" y1="${pd_y - 4}" x2="${picX1}" y2="${pd_y + 4}"/>`;
+    s += `<text class="dim-text small" x="${(picX0 + picX1) / 2}" y="${pd_y - 4}" text-anchor="middle">pic ${fmtPlain(picD)}</text>`;
+
+    // Reveal label (top, between picture and frame interior)
+    s += `<text class="dim-text small" x="${padL - 4}" y="${(frameTop + picTop) / 2 + 3}" text-anchor="end">reveal ${fmtPlain(reveal)}</text>`;
+    s += `<line class="dim-line" x1="${padL}" y1="${(frameTop + picTop) / 2}" x2="${picX0 + 14}" y2="${(frameTop + picTop) / 2}"/>`;
+
+    svg.innerHTML = s;
+  }
+
+  // ---- wire up ----
+  load();
+  // apply unit to inputs (step, label, toggle state)
+  for (const k of numericIds) $(k).step = stepFor();
+  document.querySelectorAll('.unit-label').forEach(el => { el.textContent = unit; });
+  document.querySelectorAll('.unit-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.unit === unit);
+    b.addEventListener('click', () => applyUnit(b.dataset.unit));
+  });
+  for (const id of ids) {
+    $(id).addEventListener('input', recalc);
+    $(id).addEventListener('change', recalc);
+  }
+  $('resetBtn').addEventListener('click', () => {
+    $('picType').value = defaultsMm.picType;
+    for (const k of numericIds) $(k).value = mmToDisplay(defaultsMm[k]);
+    recalc();
+  });
+  recalc();
+})();
+</script>
+</body>
+</html>
